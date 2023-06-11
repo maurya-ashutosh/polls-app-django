@@ -66,8 +66,57 @@ class ResultsView(generic.DetailView):
 
 
 # def results(request, question_id):
-#     question = get_object_or_404(Question, pk=question_id)
+#     question = get_object_or_404(Question, pk=question_id)   
 #     return render(request, "polls/results.html", {"question": question})
+
+
+def plot_results(request, question_id):
+
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+    from PIL import Image
+    import io
+
+    question = get_object_or_404(Question, pk=question_id) 
+
+    # Fetch data from the database
+
+    choices = []
+    votes = []
+    for choice in question.choice_set.all():
+        choices.append(choice.choice_text)
+    for choice in question.choice_set.all():
+        votes.append(choice.votes)
+
+    print(votes)
+
+    # Generate the plot
+    fig = plt.figure()
+    canvas = FigureCanvas(fig)
+    ax = fig.add_subplot(1, 1, 1)
+    ax.bar([x for x in range(len(choices))], votes)
+    ax.set_xlabel('Choices')
+    ax.set_ylabel('Votes')
+    ax.set_title('Voting Results')
+    ax.set_xticks([x for x in range(len(choices))])
+    ax.set_xticklabels(choices, fontsize=18)
+    canvas.draw()
+
+    # Convert the plot to PNG format
+    buf = io.BytesIO()
+    canvas.print_png(buf)
+    plt.close(fig)
+
+    # Retrieve the PNG image data from the buffer
+    image_data = buf.getvalue()
+    buf.close()
+
+    # Return the image data as an HTTP response with the appropriate content type
+    response = HttpResponse(content_type='image/png')
+    response.write(image_data)
+    return response
+
+
 
 
 def vote(request, question_id):
